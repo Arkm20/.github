@@ -1,0 +1,28 @@
+name: Falix Keep-Alive
+
+on:
+  schedule:
+    # Every 55 minutes UTC
+    - cron: '*/55 * * * *'    # must be quoted  [oai_citation:10‡GitHub Docs](https://docs.github.com/actions/learn-github-actions/events-that-trigger-workflows?utm_source=chatgpt.com)
+
+jobs:
+  restart:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Restart Falix Server if Offline
+        run: |
+          npm install falixnodes-api-wrapper
+          node <<'EOF'
+          const Wrapper = require("falixnodes-api-wrapper");
+          const client = new Wrapper(process.env.FALIX_TOKEN);
+          (async () => {
+            const srv = await client.getServer(process.env.SERVER_ID);
+            if (srv.data.attributes.state !== "running") {
+              await srv.power("start");
+              console.log("✓ Server was offline—now started");
+            } else console.log("✓ Server already running");
+          })();
+          EOF
+        env:
+          FALIX_TOKEN: ${{ secrets.FALIX_TOKEN }}
+          SERVER_ID:  ${{ secrets.SERVER_ID }}
